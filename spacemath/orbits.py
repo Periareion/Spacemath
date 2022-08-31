@@ -4,11 +4,29 @@ import math
 from .utils import newtons_method
 
 
-ecc_to_mean = lambda E, e: E - e * math.sin(E)
+def ecc_to_mean(E, e):
+    return E - e * math.sin(E)
+
 e_to_ecc_to_mean = lambda e: lambda E: ecc_to_mean(E, e)
 
-def mean_to_ecc(M, e):
-    return newtons_method(e_to_ecc_to_mean(e), math.pi, (M % math.tau))
+
+def mean_to_ecc(M, e, n=2):
+    """
+    Inverse of Kepler's equation using Newton's method
+    """
+    return newtons_method(
+        lambda E: E - e * math.sin(E),
+        lambda E: 1 - e * math.cos(E),
+        math.pi, (M % math.tau), n)
+    
+
+def ecc_to_true(E, e):
+    """
+    Convert the eccentric anomaly to the true anomaly
+    """
+    if E > math.pi:
+        return math.tau - math.acos((math.cos(E) - e)/(1 - e*math.cos(E)))
+    return math.acos((math.cos(E) - e)/(1 - e*math.cos(E)))
 
 
 def kepler_to_cartesian(
@@ -34,7 +52,7 @@ def kepler_to_cartesian(
     E = mean_to_ecc(M, e)
     
     # True anomaly
-    nu = 2 * math.atan(math.sqrt((1+e)/(1-e)) * math.tan(E/2))
+    nu = ecc_to_true(E, e)
     
     # Radius (distance from parent)
     r = a*(1 - e*math.cos(E))
