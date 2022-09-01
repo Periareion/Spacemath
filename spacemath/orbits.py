@@ -6,50 +6,6 @@ from aquaternion import *
 from .utils import newtons_method
 
 
-class Orbit:
-
-    def __init__(self,
-            parent,
-            semi_major_axis: float,
-            eccentricity: float,
-            inclination: float,
-            longitude_ascending_node: float,
-            longitude_periapsis: float,
-            mean_longitude: float = 0,
-            epoch: float = 0,):
-        
-        self.parent = parent
-        self.semi_major_axis = semi_major_axis
-        self.eccentricity = eccentricity
-        self.inclination = inclination
-        self.longitude_ascending_node = longitude_ascending_node
-        self.longitude_periapsis = longitude_periapsis
-        self.mean_longitude = mean_longitude
-        self.epoch = epoch
-
-        self.mu = parent.mu
-        self.argument_periapsis = self.longitude_periapsis - self.longitude_ascending_node
-        self.mean_motion = math.sqrt(self.mu/(self.semi_major_axis**3))
-        self.semi_latus_rectum = self.semi_major_axis*(1 - self.eccentricity**2)
-
-    def get_position(self, t: float = 0):
-        
-        mean_anomaly = self.mean_longitude - self.longitude_periapsis + self.mean_motion * (t - self.epoch)
-        eccentric_anomaly = mean_to_ecc(mean_anomaly, self.eccentricity)
-        true_anomaly = ecc_to_true(eccentric_anomaly, self.eccentricity)
-        radius = self.semi_major_axis*(1 - self.eccentricity*math.cos(eccentric_anomaly))
-
-        lon_AN = self.longitude_ascending_node
-        arg_Pe =  self.argument_periapsis
-        i = self.inclination
-
-        x = radius * (math.cos(lon_AN)*math.cos(arg_Pe+true_anomaly) - math.sin(lon_AN)*math.sin(arg_Pe+true_anomaly)*math.cos(i))
-        y = radius * (math.sin(lon_AN)*math.cos(arg_Pe+true_anomaly) + math.cos(lon_AN)*math.sin(arg_Pe+true_anomaly)*math.cos(i))
-        z = radius * (math.sin(i)*math.sin(arg_Pe+true_anomaly))
-
-        return Q((x, y, z)) + self.parent.position
-
-
 def ecc_to_mean(E, e):
     return E - e * math.sin(E)
 
@@ -69,6 +25,69 @@ def ecc_to_true(E, e):
     if E > math.pi:
         return math.tau - math.acos((math.cos(E) - e)/(1 - e*math.cos(E)))
     return math.acos((math.cos(E) - e)/(1 - e*math.cos(E)))
+
+
+class Orbit:
+
+    def __init__(self,
+            parent,
+            semi_major_axis: float,
+            eccentricity: float,
+            inclination: float,
+            longitude_ascending_node: float,
+            longitude_periapsis: float,
+            mean_longitude: float = 0,
+            epoch: float = 0,
+            radians: bool = False):
+        
+        angle_factor = 1 if radians else math.tau/360
+        
+        self.parent = parent
+        self.semi_major_axis = semi_major_axis
+        self.eccentricity = eccentricity
+        self.inclination = inclination * angle_factor
+        self.longitude_ascending_node = longitude_ascending_node * angle_factor
+        self.longitude_periapsis = longitude_periapsis * angle_factor
+        self.mean_longitude = mean_longitude * angle_factor
+        self.epoch = epoch
+
+        self.mu = parent.mu
+        self.argument_periapsis = self.longitude_periapsis - self.longitude_ascending_node
+        self.mean_motion = math.sqrt(self.mu/(self.semi_major_axis**3))
+        self.semi_latus_rectum = self.semi_major_axis*(1 - self.eccentricity**2)
+
+    def get_position(self, t: float = 0):
+        
+        mean_anomaly = self.mean_longitude - self.longitude_periapsis + self.mean_motion * (t - self.epoch)
+        eccentric_anomaly = mean_to_ecc(mean_anomaly, self.eccentricity)
+        true_anomaly = ecc_to_true(eccentric_anomaly, self.eccentricity)
+        radius = self.semi_major_axis*(1 - self.eccentricity*math.cos(eccentric_anomaly))
+
+        lon_AN = self.longitude_ascending_node
+        arg_Pe =  self.argument_periapsis
+        i = self.inclination
+
+        x, y, z = Orbit.get_xyz(i, lon_AN, arg_Pe, true_anomaly, radius)
+
+        return Q((x, y, z)) + self.parent.position
+    
+    @staticmethod
+    def get_xyz(i, lon_AN, arg_Pe, true_anomaly, radius):
+        x = radius * (math.cos(lon_AN)*math.cos(arg_Pe+true_anomaly) - math.sin(lon_AN)*math.sin(arg_Pe+true_anomaly)*math.cos(i))
+        y = radius * (math.sin(lon_AN)*math.cos(arg_Pe+true_anomaly) + math.cos(lon_AN)*math.sin(arg_Pe+true_anomaly)*math.cos(i))
+        z = radius * (math.sin(i)*math.sin(arg_Pe+true_anomaly))
+        return x, y, z
+    
+    def get_path_points(self, n, scale=1):
+        points = []
+        for k in range(n+1):
+            eccentric_anomaly = math.tau * (k / n)
+            true_anomaly = ecc_to_true(eccentric_anomaly, self.eccentricity)
+            radius = scale * self.semi_major_axis*(1 - self.eccentricity*math.cos(eccentric_anomaly))
+            points.append(
+                (Q(Orbit.get_xyz(self.inclination, self.longitude_ascending_node, self.argument_periapsis, true_anomaly, radius)) + self.parent.position)
+            )
+        return points
 
 
 def kepler_to_cartesian(

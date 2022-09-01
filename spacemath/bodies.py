@@ -3,9 +3,9 @@ import math
 
 from aquaternion import *
 
-from orbits import Orbit
-from constants import AU
-import constants
+from .orbits import Orbit
+from .constants import AU
+from . import constants
 
 
 class Body:
@@ -95,9 +95,33 @@ planets = {
             -11.26064, 102.94719, 100.46435,
             30*constants.seconds_in_year)),
     'Mars': OrbitingBody(
-        'Mars', 1.524*AU, 3.3895*10**6, (0.721, 0.25, 0.13),
+        'Mars', 0.64169*10**24, 3.3895*10**6, (0.721, 0.25, 0.13),
         Orbit(
-            stars['Sol'], 2.27956*10**6, 0.09341233, 1.85061,
+            stars['Sol'], 1.52366231*AU, 0.09341233, 1.85061,
             49.57854, 336.04084, 355.45332,
+            30*constants.seconds_in_year)),
+    'Jupiter': OrbitingBody(
+        '', 1898.13*10**24, 69.911*10**6, (0.8, 0.7, 0.5),
+        Orbit(
+            stars['Sol'], 5.20336301*AU, 0.04839266, 1.30530,
+            100.55615, 14.75385, 34.40438,
+            30*constants.seconds_in_year)),
+    'Saturn': OrbitingBody(
+        'Saturn', 568.32*10**24, 58.232*10**6, (0.95, 0.8, 0.5),
+        Orbit(
+            stars['Sol'], 9.5370732*AU, 0.05415060, 2.48446,
+            113.71504, 92.43194, 49.94432,
+            30*constants.seconds_in_year)),
+    'Uranus': OrbitingBody(
+        'Uranus', 86.811*10**24, 25.362*10**6, (0.8, 0.9, 0.95),
+        Orbit(
+            stars['Sol'], 19.19126393*AU, 0.04716771, 0.76986,
+            74.22988, 170.96424, 313.23218,
+            30*constants.seconds_in_year)),
+    'Neptune': OrbitingBody(
+        'Neptune', 102.409*10**24, 24.622*10**6, (0.3, 0.5, 0.95),
+        Orbit(
+            stars['Sol'], 30.06896348*AU, 0.00858586, 1.76917,
+            131.72169, 44.97135, 304.88003,
             30*constants.seconds_in_year)),
 }
