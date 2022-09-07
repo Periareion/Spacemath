@@ -1,2 +1,1 @@
 # Spacemath
- Self-explanatory
